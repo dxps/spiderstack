@@ -1,12 +1,13 @@
 .{
     .name = .tmp,
-    .version = "0.0.0",
+    .version = "0.1.0",
     .fingerprint = 0x2cef7d48212e6016,
     .minimum_zig_version = "0.17.0-dev.93+76174e1bc",
 
     .dependencies = .{
         .spider = .{
-            .path = "../..",
+            .url = "git+https://github.com/llllOllOOll/spider#aa5b872753e4b2572a8e101dd676000b91ee0448",
+            .hash = "spider-0.3.0-P7cGrn3_BgAfwm4X5kl6Fg9eW6p8VBo0nhV-WBlCdSTX",
         },
     },
 
