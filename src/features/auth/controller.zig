@@ -1,8 +1,6 @@
 const std = @import("std");
 const spider = @import("spider");
 const db = spider.pg;
-const Response = spider.Response;
-const Request = spider.Request;
 const auth = spider.auth;
 const google = spider.google;
 
@@ -17,21 +15,42 @@ const i18n = @import("core").i18n;
 const features = @import("core").middleware.features;
 const bcrypt = @import("bcrypt.zig");
 
-const view = @embedFile("views/login.html");
+fn urlDecode(alloc: std.mem.Allocator, str: []const u8) ![]u8 {
+    var list: std.ArrayList(u8) = .empty;
+    var i: usize = 0;
+    while (i < str.len) {
+        if (str[i] == '%' and i + 2 < str.len) {
+            const hex = str[i + 1 .. i + 3];
+            const byte = std.fmt.parseInt(u8, hex, 16) catch {
+                try list.append(alloc, str[i]);
+                i += 1;
+                continue;
+            };
+            try list.append(alloc, byte);
+            i += 3;
+        } else if (str[i] == '+') {
+            try list.append(alloc, ' ');
+            i += 1;
+        } else {
+            try list.append(alloc, str[i]);
+            i += 1;
+        }
+    }
+    return list.toOwnedSlice(alloc);
+}
 
-fn resolveLocale(req: *Request) i18n.Locale {
-    const raw = req.headers.get("Accept-Language") orelse return .pt_BR;
-    std.log.info("Accept-Language header: {s}", .{raw});
+// const view = @embedFile("views/login.html");
+
+fn resolveLocale(c: *spider.Ctx) i18n.Locale {
+    const raw = c.header("Accept-Language") orelse return .pt_BR;
     const end = std.mem.indexOfAny(u8, raw, ",;") orelse raw.len;
     const tag = std.mem.trim(u8, raw[0..end], " ");
     if (tag.len == 0) return .pt_BR;
-    const locale = i18n.localeFromStr(tag);
-    std.log.info("Resolved locale: {}", .{locale});
-    return locale;
+    return i18n.localeFromStr(tag);
 }
 
-fn generateJwtWithRoles(alloc: std.mem.Allocator, user: model.User) ![]u8 {
-    const jwt_secret = std.c.getenv("JWT_SECRET") orelse return error.MissingJwtSecret;
+fn generateJwtWithRoles(alloc: std.mem.Allocator, io: std.Io, user: model.User) ![]u8 {
+    const jwt_secret = spider.env.getOr("JWT_SECRET", "");
 
     const roles = if (features.rbac_enabled)
         try repository.findUserRoles(alloc, user.uuid)
@@ -43,7 +62,8 @@ fn generateJwtWithRoles(alloc: std.mem.Allocator, user: model.User) ![]u8 {
     else
         &[_][]const u8{};
 
-    const exp: i64 = 1767225600 + (60 * 60 * 24 * 7); // 2026-01-01 + 7 days
+    const now = std.Io.Clock.now(.real, io);
+    const exp: i64 = now.toSeconds() + (60 * 60 * 24 * 7);
 
     return try auth.jwtSign(alloc, AppClaims{
         .sub = user.uuid,
@@ -54,135 +74,149 @@ fn generateJwtWithRoles(alloc: std.mem.Allocator, user: model.User) ![]u8 {
         .exp = exp,
         .roles = roles,
         .permissions = permissions,
-    }, std.mem.span(jwt_secret));
+    }, jwt_secret);
 }
 
-fn requireAuth(alloc: std.mem.Allocator, req: *Request) !void {
-    const cookie_header = req.headers.get("Cookie") orelse return error.Unauthorized;
-    const token = auth.cookieGet(cookie_header) orelse return error.Unauthorized;
-    const jwt_secret = std.c.getenv("JWT_SECRET") orelse return error.MissingJwtSecret;
-    _ = try auth.jwtVerify(AppClaims, alloc, token, std.mem.span(jwt_secret));
+fn requireAuth(c: *spider.Ctx) !void {
+    const token = c.cookie(auth.COOKIE_NAME) orelse return error.Unauthorized;
+    const jwt_secret = spider.env.getOr("JWT_SECRET", "");
+    _ = try auth.jwtVerify(AppClaims, c.arena, token, jwt_secret);
 }
 
-pub fn index(alloc: std.mem.Allocator, req: *Request) !Response {
-    const locale = resolveLocale(req);
-    const data = try presenter.buildLoginContext(alloc, req, locale, "", null);
-    return spider.render(alloc, view, data);
+pub fn index(c: *spider.Ctx) !spider.Response {
+    const locale = resolveLocale(c);
+    const data = try presenter.buildLoginContext(c.arena, c, locale, "", null);
+    return c.view("auth/login", data, .{});
 }
 
-pub fn redirectToGoogle(alloc: std.mem.Allocator, _: *Request) !Response {
-    const google_client_id = std.c.getenv("GOOGLE_CLIENT_ID") orelse return error.MissingGoogleClientId;
-    const redirect_uri = "http://localhost:8080/auth/google/callback";
+pub fn redirectToGoogle(c: *spider.Ctx) !spider.Response {
+    const redirect_uri = spider.env.getOr("GOOGLE_REDIRECT_URI", "http://localhost:8080/auth/google/callback");
     const scope = "openid profile email";
 
-    const auth_url = try std.fmt.allocPrint(alloc, "https://accounts.google.com/o/oauth2/v2/auth?" ++
+    const auth_url = try std.fmt.allocPrint(c.arena, "https://accounts.google.com/o/oauth2/v2/auth?" ++
         "client_id={s}&" ++
         "redirect_uri={s}&" ++
         "response_type=code&" ++
         "scope={s}&" ++
-        "access_type=offline", .{ std.mem.span(google_client_id), redirect_uri, scope });
+        "access_type=offline", .{ spider.env.getOr("GOOGLE_CLIENT_ID", ""), redirect_uri, scope });
 
-    return Response.redirect(alloc, auth_url);
+    return c.redirect(auth_url);
 }
 
-pub fn googleCallback(alloc: std.mem.Allocator, req: *Request) !Response {
-    var arena = std.heap.ArenaAllocator.init(alloc);
-    defer arena.deinit();
-    const arena_allocator = arena.allocator();
-
-    const code = (try req.queryParam("code", arena_allocator)) orelse {
-        return Response.redirect(arena_allocator, "/auth/google");
-    };
-
+pub fn googleCallback(c: *spider.Ctx) !spider.Response {
+    const code_encoded = c.query("code") orelse return c.redirect("/auth/google");
+    const code = try urlDecode(c.arena, code_encoded);
     const googleConfig = config.getGoogleConfig();
-    const profile = try service.fetchGoogleProfile(arena_allocator, req.io, code, googleConfig);
 
-    const user = try use_case.findOrCreateOAuthUser(arena_allocator, profile);
+    const profile = service.fetchGoogleProfile(c, code, googleConfig) catch return c.redirect("/login");
+    const user = use_case.findOrCreateOAuthUser(c.arena, profile) catch return c.redirect("/login");
+    const token = generateJwtWithRoles(c.arena, c._io, user) catch return c.redirect("/login");
+    const cookie_value = auth.cookieSet(c.arena, token) catch return c.redirect("/login");
 
-    const token = try generateJwtWithRoles(arena_allocator, user);
-
-    const cookie_value = try auth.cookieSet(arena_allocator, token);
-    var response = try Response.redirect(arena_allocator, "/");
-    try response.headers.set(arena_allocator, "Set-Cookie", cookie_value);
-
-    return response;
+    const headers = try c.arena.alloc([2][]const u8, 2);
+    headers[0] = .{ "Location", "/" };
+    headers[1] = .{ "Set-Cookie", cookie_value };
+    return spider.Response{
+        .status = .found,
+        .body = null,
+        .content_type = "text/plain",
+        .headers = headers,
+    };
 }
 
-pub fn handleLogin(alloc: std.mem.Allocator, req: *spider.Request) !spider.Response {
-    _ = req;
-    return spider.Response.text(alloc, "POST received");
+pub fn handleLogin(c: *spider.Ctx) !spider.Response {
+    return c.text("POST received", .{});
 }
 
-pub fn handleEmailAuth(alloc: std.mem.Allocator, req: *Request) !Response {
-    const input = try req.parseForm(alloc, model.CreateInput);
-
-    var arena = std.heap.ArenaAllocator.init(alloc);
-    defer arena.deinit();
-    const arena_allocator = arena.allocator();
+pub fn handleEmailAuth(c: *spider.Ctx) !spider.Response {
+    const input = try c.parseForm(model.CreateInput);
 
     if (input.email.len == 0 or input.password.len == 0) {
-        return Response.text(alloc, "Email and password required");
+        return c.text("Email and password required", .{});
     }
 
     const isRegister = input.name.len > 0;
 
     if (isRegister) {
         // Registration flow
-        if (try repository.findByEmail(alloc, input.email)) |existing_user| {
-            const has_email_identity = try repository.findIdentityByEmail(alloc, existing_user.email, "email");
+        if (try repository.findByEmail(c.arena, input.email)) |existing_user| {
+            const has_email_identity = try repository.findIdentityByEmail(c.arena, existing_user.email, "email");
             if (has_email_identity != null) {
-                return Response.text(alloc, "Email already registered");
+                return c.text("Email already registered", .{});
             }
 
-            const hash = try bcrypt.hash(input.password, arena_allocator);
-            try repository.addIdentity(alloc, existing_user.uuid, "email", null, hash);
+            const hash = try bcrypt.hash(input.password, c.arena);
+            try repository.addIdentity(c.arena, existing_user.uuid, "email", null, hash);
 
             // Login after adding identity
             const user = existing_user;
-            const token = try generateJwtWithRoles(alloc, user);
-            const cookie_value = try auth.cookieSet(alloc, token);
-            var response = try Response.redirect(alloc, "/");
-            try response.headers.set(alloc, "Set-Cookie", cookie_value);
-            return response;
+            const token = try generateJwtWithRoles(c.arena, c._io, user);
+            const cookie_value = try auth.cookieSet(c.arena, token);
+            const headers1 = try c.arena.alloc([2][]const u8, 2);
+            headers1[0] = .{ "Location", "/" };
+            headers1[1] = .{ "Set-Cookie", cookie_value };
+            return spider.Response{
+                .status = .found,
+                .body = null,
+                .content_type = "text/plain",
+                .headers = headers1,
+            };
         }
 
-        const hash = try bcrypt.hash(input.password, arena_allocator);
-        const user = try repository.createEmailUser(alloc, input.email, input.name, hash);
+        const hash = try bcrypt.hash(input.password, c.arena);
+        const user = try repository.createEmailUser(c.arena, input.email, input.name, hash);
 
-        const token = try generateJwtWithRoles(alloc, user);
-        const cookie_value = try auth.cookieSet(alloc, token);
-        var response = try Response.redirect(alloc, "/");
-        try response.headers.set(alloc, "Set-Cookie", cookie_value);
-        return response;
+        const token2 = try generateJwtWithRoles(c.arena, c._io, user);
+        const cookie_value2 = try auth.cookieSet(c.arena, token2);
+        const headers2 = try c.arena.alloc([2][]const u8, 2);
+        headers2[0] = .{ "Location", "/" };
+        headers2[1] = .{ "Set-Cookie", cookie_value2 };
+        return spider.Response{
+            .status = .found,
+            .body = null,
+            .content_type = "text/plain",
+            .headers = headers2,
+        };
     } else {
         // Login flow
-        const identity = try repository.findIdentityByEmail(alloc, input.email, "email") orelse {
-            return Response.text(alloc, "Invalid credentials");
+        const identity = try repository.findIdentityByEmail(c.arena, input.email, "email") orelse {
+            return c.text("Invalid credentials", .{});
         };
 
         const password_ok = try bcrypt.verify(input.password, identity.password_hash orelse "");
         if (!password_ok) {
-            return Response.text(alloc, "Invalid credentials");
+            return c.text("Invalid credentials", .{});
         }
 
-        const user = try repository.findByUuid(alloc, identity.user_uuid) orelse {
-            return Response.text(alloc, "User not found");
+        const user = try repository.findByUuid(c.arena, identity.user_uuid) orelse {
+            return c.text("User not found", .{});
         };
 
-        const token = try generateJwtWithRoles(alloc, user);
-        const cookie_value = try auth.cookieSet(alloc, token);
-        var response = try Response.redirect(alloc, "/");
-        try response.headers.set(alloc, "Set-Cookie", cookie_value);
-        return response;
+        const token = try generateJwtWithRoles(c.arena, c._io, user);
+        const cookie_value = try auth.cookieSet(c.arena, token);
+        const headers = try c.arena.alloc([2][]const u8, 2);
+        headers[0] = .{ "Location", "/" };
+        headers[1] = .{ "Set-Cookie", cookie_value };
+        return spider.Response{
+            .status = .found,
+            .body = null,
+            .content_type = "text/plain",
+            .headers = headers,
+        };
     }
 }
 
-pub fn logout(alloc: std.mem.Allocator, req: *Request) !Response {
-    _ = req;
-    const cookie_value = try auth.cookieClear(alloc);
-    var response = try Response.redirect(alloc, "/login");
-    try response.headers.set(alloc, "Set-Cookie", cookie_value);
-    return response;
+pub fn logout(c: *spider.Ctx) !spider.Response {
+    const cookie_value = try auth.cookieClear(c.arena);
+    const headers = try c.arena.alloc([2][]const u8, 2);
+    headers[0] = .{ "Location", "/login" };
+    headers[1] = .{ "Set-Cookie", cookie_value };
+    return spider.Response{
+        .status = .found,
+        .body = null,
+        .content_type = "text/plain",
+        .headers = headers,
+    };
 }
 
 test "transaction creates table but rolls back" {

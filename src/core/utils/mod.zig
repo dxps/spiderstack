@@ -8,3 +8,8 @@ pub fn parseIdFromRequest(req: anytype) !i64 {
     const id_str = req.params.get("id") orelse return error.MissingIdParam;
     return try parseId(id_str);
 }
+
+pub fn parseIdFromCtx(c: anytype) !i64 {
+    const id_str = c.params.get("id") orelse return error.MissingIdParam;
+    return try parseId(id_str);
+}

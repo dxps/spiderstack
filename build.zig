@@ -44,10 +44,19 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(exe);
 
+    // Automatic setup with spider.config.zig and embedded templates
+
+    // 1. generate-templates
     const gen = b.addRunArtifact(spider_dep.artifact("generate-templates"));
     gen.addArg("src/");
     gen.addArg("src/embedded_templates.zig");
     exe.step.dependOn(&gen.step);
+
+    // 3. register spider_config
+    // The file will be created automatically or the import will fail gracefully
+    exe.root_module.addAnonymousImport("spider_config", .{
+        .root_source_file = b.path("spider.config.zig"),
+    });
 
     // ── Run ───────────────────────────────────────────────────────────
     const run_cmd = b.addRunArtifact(exe);

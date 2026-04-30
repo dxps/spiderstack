@@ -1,6 +1,5 @@
 const std = @import("std");
 const spider = @import("spider");
-const Request = spider.Request;
 const i18n = @import("core").i18n;
 const base_context = @import("core").context.base_context;
 const model = @import("model.zig");
@@ -43,11 +42,11 @@ pub fn toRow(alloc: std.mem.Allocator, game: anytype, rank: i32, locale: i18n.Lo
 
 pub fn buildGameListContext(
     alloc: std.mem.Allocator,
-    req: *Request,
+    c: *spider.Ctx,
     locale: i18n.Locale,
     games: []const model.Game,
 ) !GameListContext {
-    const base = try base_context.build(alloc, req, locale);
+    const base = try base_context.build(alloc, c, locale);
 
     var rows = try std.ArrayList(GameRow).initCapacity(alloc, games.len);
     errdefer rows.deinit(alloc);

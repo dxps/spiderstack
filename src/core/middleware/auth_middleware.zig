@@ -1,9 +1,9 @@
 const std = @import("std");
 const spider = @import("spider");
 
-const Request = spider.Request;
+const Ctx = spider.Ctx;
 const Response = spider.Response;
-const NextFn = spider.web.NextFn;
+const NextFn = spider.NextFn;
 const auth = spider.auth;
 
 pub const Features = struct {
@@ -24,15 +24,9 @@ pub const AppClaims = struct {
 };
 
 const PUBLIC_PATHS = [_][]const u8{
-    "/public/",
-    "/assets",
-    "/up",
+    "/login",
     "/auth/google",
     "/auth/google/callback",
-    "/auth/email/register",
-    "/auth/email/login",
-    "/login",
-    "/dev/form",
 };
 
 fn isPublicPath(path: []const u8) bool {
@@ -42,15 +36,8 @@ fn isPublicPath(path: []const u8) bool {
     return false;
 }
 
-fn methodHasBody(req: *Request) bool {
-    const method = @tagName(req.method);
-    return std.mem.eql(u8, method, "POST") or
-        std.mem.eql(u8, method, "PUT") or
-        std.mem.eql(u8, method, "PATCH");
-}
-
-fn localeFromHeader(req: *Request) []const u8 {
-    const raw = req.headers.get("Accept-Language") orelse return "pt_BR";
+fn resolveLocale(c: *Ctx) []const u8 {
+    const raw = c.header("Accept-Language") orelse return "pt_BR";
     const end = std.mem.indexOfAny(u8, raw, ",;") orelse raw.len;
     const tag = std.mem.trim(u8, raw[0..end], " ");
     return if (tag.len > 0) tag else "pt_BR";
@@ -69,56 +56,20 @@ pub fn requirePermission(claims: *const AppClaims, required: []const u8) bool {
     return hasPermission(claims, required);
 }
 
-pub fn authMiddleware(alloc: std.mem.Allocator, req: *Request, next: NextFn) !Response {
-    if (isPublicPath(req.path)) {
-        req.locale = localeFromHeader(req);
-        return next(alloc, req);
-    }
+pub fn authMiddleware(c: *Ctx, next: NextFn) !Response {
+    const path = if (std.mem.indexOfScalar(u8, c.request.head.target, '?')) |q|
+        c.request.head.target[0..q]
+    else
+        c.request.head.target;
 
-    const has_content_length = req.headers.get("Content-Length") != null or
-        req.headers.get("Transfer-Encoding") != null;
+    if (isPublicPath(path)) return next(c);
 
-    if (methodHasBody(req) and !has_content_length) {
-        const msg =
-            "400 Bad Request\n\n" ++
-            "POST/PUT requests require Content-Length header.\n" ++
-            "Please include a valid Content-Length or use GET for public resources.\n";
-        return Response.text(alloc, msg);
-    }
-
-    const jwt_secret_z = std.c.getenv("JWT_SECRET") orelse
-        return Response.redirect(alloc, "/login");
+    const jwt_secret_z = std.c.getenv("JWT_SECRET") orelse return c.redirect("/login");
     const jwt_secret = std.mem.span(jwt_secret_z);
 
-    const cookie_header = req.headers.get("Cookie") orelse
-        return Response.redirect(alloc, "/login");
+    const token = c.cookie(auth.COOKIE_NAME) orelse return c.redirect("/login");
 
-    const token = auth.cookieGet(cookie_header) orelse
-        return Response.redirect(alloc, "/login");
+    _ = auth.jwtVerify(AppClaims, c.arena, token, jwt_secret) catch return c.redirect("/login");
 
-    var arena = std.heap.ArenaAllocator.init(alloc);
-    defer arena.deinit();
-    const arena_alloc = arena.allocator();
-
-    const claims = auth.jwtVerify(AppClaims, arena_alloc, token, jwt_secret) catch
-        return Response.redirect(alloc, "/login");
-
-    const resolved_locale = if (claims.locale_set)
-        claims.locale
-    else
-        localeFromHeader(req);
-
-    req.locale = resolved_locale;
-    req.user = .{
-        .id = try alloc.dupe(u8, claims.sub),
-        .email = try alloc.dupe(u8, claims.email),
-        .name = try alloc.dupe(u8, claims.name),
-    };
-
-    try req.params.put(alloc, try alloc.dupe(u8, "_user_id"), try alloc.dupe(u8, req.user.id.?));
-    try req.params.put(alloc, try alloc.dupe(u8, "_user_email"), try alloc.dupe(u8, req.user.email.?));
-    try req.params.put(alloc, try alloc.dupe(u8, "_user_name"), try alloc.dupe(u8, req.user.name.?));
-    try req.params.put(alloc, try alloc.dupe(u8, "_user_roles"), try alloc.dupe(u8, try std.mem.join(alloc, ",", claims.roles)));
-
-    return next(alloc, req);
+    return next(c);
 }

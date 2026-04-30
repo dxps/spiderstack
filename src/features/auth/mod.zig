@@ -11,9 +11,9 @@ const google = spider.google;
 
 pub fn getGoogleConfig() google.GoogleConfig {
     return .{
-        .client_id = std.mem.span(std.c.getenv("GOOGLE_CLIENT_ID") orelse @panic("GOOGLE_CLIENT_ID not set")),
-        .client_secret = std.mem.span(std.c.getenv("GOOGLE_CLIENT_SECRET") orelse @panic("GOOGLE_CLIENT_SECRET not set")),
-        .redirect_uri = std.mem.span(std.c.getenv("GOOGLE_REDIRECT_URI") orelse "http://localhost:8080/auth/google/callback"),
+        .client_id = spider.env.getOr("GOOGLE_CLIENT_ID", ""),
+        .client_secret = spider.env.getOr("GOOGLE_CLIENT_SECRET", ""),
+        .redirect_uri = spider.env.getOr("GOOGLE_REDIRECT_URI", "http://localhost:3000/auth/google/callback"),
     };
 }
 

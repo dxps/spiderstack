@@ -1,7 +1,5 @@
 const std = @import("std");
 const spider = @import("spider");
-const Response = spider.Response;
-const Request = spider.Request;
 const core = @import("core");
 
 const model = @import("model.zig");
@@ -9,39 +7,38 @@ const repository = @import("repository.zig");
 const presenter = @import("presenter.zig");
 const i18n = core.i18n;
 
-pub fn index(alloc: std.mem.Allocator, req: *Request) !Response {
-    const locale_raw = req.locale orelse "pt-BR";
+pub fn index(c: *spider.Ctx) !spider.Response {
+    const locale_raw = c.header("Accept-Language") orelse "pt-BR";
     const locale = i18n.localeFromStr(locale_raw);
 
-    const games = try repository.findAll(alloc);
-    const context = try presenter.buildGameListContext(alloc, req, locale, games);
+    const games = try repository.findAll(c.arena);
+    const context = try presenter.buildGameListContext(c.arena, c, locale, games);
 
-    // return spider.renderView(alloc, req, view, context);
-    return spider.chuckBerry(alloc, req, "games/index", context);
+    return c.view("games/index", context, .{});
 }
 
-pub fn create(alloc: std.mem.Allocator, req: *Request) !Response {
-    const input = try req.parseForm(alloc, model.CreateInput);
+pub fn create(c: *spider.Ctx) !spider.Response {
+    const input = try c.parseForm(model.CreateInput);
 
-    _ = try repository.create(alloc, input);
+    _ = try repository.create(c.arena, input);
 
-    return Response.redirect(alloc, "/games");
+    return c.redirect("/games");
 }
 
-pub fn update(alloc: std.mem.Allocator, req: *Request) !Response {
-    const id = try core.utils.parseIdFromRequest(req);
+pub fn update(c: *spider.Ctx) !spider.Response {
+    const id = try core.utils.parseIdFromCtx(c);
 
-    const updates = try req.parseForm(alloc, model.UpdateInput);
+    const updates = try c.parseForm(model.UpdateInput);
 
-    _ = try repository.update(alloc, id, updates);
+    _ = try repository.update(c.arena, id, updates);
 
-    return Response.redirect(alloc, "/games");
+    return c.redirect("/games");
 }
 
-pub fn delete(alloc: std.mem.Allocator, req: *Request) !Response {
-    const id = try core.utils.parseIdFromRequest(req);
+pub fn delete(c: *spider.Ctx) !spider.Response {
+    const id = try core.utils.parseIdFromCtx(c);
 
-    try repository.delete(alloc, id);
+    try repository.delete(c.arena, id);
 
-    return Response.text(alloc, "");
+    return c.text("", .{});
 }

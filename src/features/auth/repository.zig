@@ -20,14 +20,14 @@ pub const Role = struct {
 };
 
 pub fn findByUuid(alloc: std.mem.Allocator, user_uuid: []const u8) !?model.User {
-    const sql = "SELECT id, uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id FROM users WHERE uuid = $1 LIMIT 1";
+    const sql = "SELECT id, uuid::text as uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id::text as tenant_id FROM users WHERE uuid = $1 LIMIT 1";
     const result = try db.queryOne(model.User, alloc, sql, .{user_uuid});
     return result;
 }
 
 pub fn findByGoogleId(alloc: std.mem.Allocator, google_id: []const u8) !?model.User {
     const sql =
-        \\SELECT u.id, u.uuid, u.email, u.name, u.google_id, u.avatar_url, u.created_at, u.locale, u.locale_set, u.tenant_id
+        \\SELECT u.id, u.uuid::text as uuid, u.email, u.name, u.google_id, u.avatar_url, u.created_at, u.locale, u.locale_set, u.tenant_id::text as tenant_id
         \\FROM users u
         \\JOIN user_identities ui ON ui.user_uuid = u.uuid
         \\WHERE ui.provider = 'google' AND ui.provider_user_id = $1
@@ -38,13 +38,13 @@ pub fn findByGoogleId(alloc: std.mem.Allocator, google_id: []const u8) !?model.U
 }
 
 pub fn findByEmail(alloc: std.mem.Allocator, email: []const u8) !?model.User {
-    const sql = "SELECT id, uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id FROM users WHERE email = $1 LIMIT 1";
+    const sql = "SELECT id, uuid::text as uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id::text as tenant_id FROM users WHERE email = $1 LIMIT 1";
     const result = try db.queryOne(model.User, alloc, sql, .{email});
     return result;
 }
 
 pub fn findById(alloc: std.mem.Allocator, id: i64) !?model.User {
-    const sql = "SELECT id, uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id FROM users WHERE id = $1 LIMIT 1";
+    const sql = "SELECT id, uuid::text as uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id::text as tenant_id FROM users WHERE id = $1 LIMIT 1";
     const result = try db.queryOne(model.User, alloc, sql, .{id});
     return result;
 }
@@ -56,7 +56,7 @@ pub fn createOAuthUser(alloc: std.mem.Allocator, email: []const u8, name: []cons
     const user_sql =
         \\INSERT INTO users (uuid, email, name, google_id, avatar_url, locale, locale_set)
         \\VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, false)
-        \\RETURNING id, uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id
+        \\RETURNING id, uuid::text as uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id::text as tenant_id
     ;
     const user_result = try tx.queryOne(model.User, alloc, user_sql, .{ email, name, google_id, avatar_url, locale });
     const created_user = user_result orelse return error.UserCreationFailed;
@@ -70,7 +70,7 @@ pub fn createOAuthUser(alloc: std.mem.Allocator, email: []const u8, name: []cons
     ;
     _ = try tx.query(void, alloc, identity_sql, .{ user_uuid, google_id });
 
-    const default_role_sql = "SELECT id FROM roles WHERE is_default = true LIMIT 1";
+    const default_role_sql = "SELECT id::text as id FROM roles WHERE is_default = true LIMIT 1";
     const role_result = try tx.queryOne(struct { id: []const u8 }, alloc, default_role_sql, .{});
     if (role_result) |role| {
         const user_role_sql = "INSERT INTO user_roles (user_uuid, role_id) VALUES ($1, $2)";
@@ -89,7 +89,7 @@ pub fn createEmailUser(alloc: std.mem.Allocator, email: []const u8, name: []cons
     const user_sql =
         \\INSERT INTO users (uuid, email, name, locale, locale_set)
         \\VALUES (gen_random_uuid(), $1, $2, 'pt_BR', false)
-        \\RETURNING id, uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id
+        \\RETURNING id, uuid::text as uuid, email, name, google_id, avatar_url, created_at, locale, locale_set, tenant_id::text as tenant_id
     ;
     const user_result = try tx.queryOne(model.User, alloc, user_sql, .{ email, name });
     const created_user = user_result orelse return error.UserCreationFailed;
@@ -103,7 +103,7 @@ pub fn createEmailUser(alloc: std.mem.Allocator, email: []const u8, name: []cons
     ;
     _ = try tx.query(void, alloc, identity_sql, .{ user_uuid, password_hash });
 
-    const default_role_sql = "SELECT id FROM roles WHERE is_default = true LIMIT 1";
+    const default_role_sql = "SELECT id::text as id FROM roles WHERE is_default = true LIMIT 1";
     const role_result = try tx.queryOne(struct { id: []const u8 }, alloc, default_role_sql, .{});
     if (role_result) |role| {
         const user_role_sql = "INSERT INTO user_roles (user_uuid, role_id) VALUES ($1, $2)";
@@ -117,7 +117,7 @@ pub fn createEmailUser(alloc: std.mem.Allocator, email: []const u8, name: []cons
 
 pub fn findIdentityByEmail(alloc: std.mem.Allocator, email: []const u8, provider: []const u8) !?UserIdentity {
     const sql =
-        \\SELECT ui.id, ui.user_uuid, ui.provider, ui.provider_user_id, ui.password_hash, ui.created_at
+        \\SELECT ui.id::text as id, ui.user_uuid::text as user_uuid, ui.provider, ui.provider_user_id, ui.password_hash, ui.created_at
         \\FROM user_identities ui
         \\JOIN users u ON u.uuid = ui.user_uuid
         \\WHERE u.email = $1 AND ui.provider = $2

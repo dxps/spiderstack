@@ -16,7 +16,7 @@ pub const ItemContext = struct {
 };
 
 pub fn buildContext(alloc: std.mem.Allocator, req: anytype, todos: []const model.Todo) !TodoContext {
-    const locale_raw = req.locale orelse "pt-BR";
+    const locale_raw = req.header("Accept-Language") orelse "pt-BR";
     const locale = i18n.localeFromStr(locale_raw);
     const base = try base_context.build(alloc, req, locale);
 
@@ -27,7 +27,7 @@ pub fn buildContext(alloc: std.mem.Allocator, req: anytype, todos: []const model
 }
 
 pub fn buildItemContext(alloc: std.mem.Allocator, req: anytype, todo: model.Todo) !ItemContext {
-    const locale_raw = req.locale orelse "pt-BR";
+    const locale_raw = req.header("Accept-Language") orelse "pt-BR";
     const locale = i18n.localeFromStr(locale_raw);
     const base = try base_context.build(alloc, req, locale);
 

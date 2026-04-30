@@ -15,10 +15,10 @@ pub const EmbeddedTemplates = struct {
     movies_index: []const u8 = @embedFile("features/movies/views/index.html"),
     movies_popular: []const u8 = @embedFile("features/movies/views/popular.html"),
     movies_details: []const u8 = @embedFile("features/movies/views/details.html"),
-    layout: []const u8 = @embedFile("shared/templates/layout.html"),
     partials_bottom_nav: []const u8 = @embedFile("shared/templates/partials/bottom_nav.html"),
     partials_drawer: []const u8 = @embedFile("shared/templates/partials/drawer.html"),
     partials_sidebar: []const u8 = @embedFile("shared/templates/partials/sidebar.html"),
     partials_topbar: []const u8 = @embedFile("shared/templates/partials/topbar.html"),
+    layout: []const u8 = @embedFile("shared/templates/layout.html"),
 
 };

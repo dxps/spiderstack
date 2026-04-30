@@ -1,6 +1,5 @@
 const std = @import("std");
 const spider = @import("spider");
-const Request = spider.Request;
 const pt_BR = @import("locales/pt_BR.zig");
 const en_US = @import("locales/en_US.zig");
 
@@ -88,10 +87,17 @@ pub fn formatCurrency(locale: Locale, amount_cents: i64, buf: []u8) ![]u8 {
 }
 
 pub fn localeFromStr(s: []const u8) Locale {
+    const clean = blk: {
+        const s_trim = std.mem.trim(u8, s, " ");
+        if (std.mem.indexOfScalar(u8, s_trim, ',')) |i| break :blk s_trim[0..i];
+        if (std.mem.indexOfScalar(u8, s_trim, ';')) |i| break :blk s_trim[0..i];
+        break :blk s_trim;
+    };
+
     const normalized = normalized: {
         var buf: [10]u8 = .{0} ** 10;
-        const len = @min(s.len, 10);
-        @memcpy(buf[0..len], s);
+        const len = @min(clean.len, 10);
+        @memcpy(buf[0..len], clean);
         for (buf[0..len]) |*c| {
             c.* = std.ascii.toLower(c.*);
         }
@@ -246,8 +252,8 @@ test "monthShort returns empty for invalid month" {
     try std.testing.expectEqualStrings("", monthShort(.en_US, 13));
 }
 
-pub fn resolveLocale(user: anytype, req: *Request) Locale {
-    const header_locale = req.locale;
+pub fn resolveLocale(user: anytype, c: *spider.Ctx) Locale {
+    const header_locale = c.header("Accept-Language");
     return if (user.locale_set)
         localeFromStr(user.locale)
     else if (header_locale) |hl|

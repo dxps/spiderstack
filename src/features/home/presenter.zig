@@ -1,6 +1,5 @@
 const std = @import("std");
 const spider = @import("spider");
-const Request = spider.Request;
 const i18n = @import("core").i18n;
 const base_context = @import("core").context.base_context;
 
@@ -16,10 +15,10 @@ pub const HomeContext = struct {
 
 pub fn buildHomeContext(
     alloc: std.mem.Allocator,
-    req: *Request,
+    c: *spider.Ctx,
     locale: i18n.Locale,
 ) !HomeContext {
-    const base = try base_context.build(alloc, req, locale);
+    const base = try base_context.build(alloc, c, locale);
 
     return HomeContext{
         .base = base,
