@@ -1,48 +1,39 @@
-{% extends "layout" %}
-{% block "content" %}
+extends "layout"
+
 <div class="max-w-2xl mx-auto space-y-8">
-
-  <!-- SpiderStack Header -->
-  <div class="text-center py-4">
-  <!--   <h1 class="text-5xl font-bold tracking-tighter text-yellow-400">{{ base.user_name }}</h1> -->
-  <!--   <p class="text-zinc-400 mt-2">{{ base.user_email }}</p> -->
-  </div>
-
   <!-- Spider Framework Card -->
   <div class="bg-zinc-900 rounded-3xl p-6">
     <div class="flex items-center gap-3 mb-4">
       <img src="/spider_logo.png" alt="Spider" class="w-10 h-10">
       <div>
-        <div class="font-semibold text-yellow-400">{{ spider_card_title }}</div>
+        <div class="font-semibold text-yellow-400">{ spider_card_title ?? "Spider" }</div>
         <div class="text-xs text-zinc-400">Web Framework for Zig</div>
       </div>
     </div>
     <p class="text-zinc-300 text-sm leading-relaxed">
-      {{ spider_card_desc }}
+      { spider_card_desc ?? "A high-performance web framework written in Zig." }
     </p>
     <div class="mt-5">
-      <a href="https://www.spiderme.org/" target="_blank" 
+      <a href="https://www.spiderme.org/" target="_blank"
          class="block bg-yellow-400 hover:bg-yellow-300 transition text-zinc-950 font-medium text-center py-3 rounded-2xl">
-        {{ spider_card_cta }}
+        { spider_card_cta ?? "Get Started" }
       </a>
     </div>
   </div>
 
-<!-- Tech Stack -->
-<div class="bg-zinc-900 rounded-3xl p-6">
-  <div class="text-yellow-400 text-sm font-medium mb-5">{{ tech_stack_title }}</div>
-  <div class="grid grid-cols-3 gap-6 text-center">
-    <div><img src="/ziggy.svg" alt="Zig" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">Zig</span></div>
-    <div><img src="/htmx.png" alt="HTMX" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">HTMX</span></div>
-    <div><img src="/postgresql.png" alt="PostgreSQL" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">PostgreSQL</span></div>
-    <div><img src="/tailwind.svg" alt="Tailwind" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">Tailwind</span></div>
-    <div><img src="/daysiui.svg" alt="DaisyUI" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">DaisyUI</span></div>
-    <div><img src="/alpine_long.svg" alt="Alpine.js" class="w-12 h-12 mx-auto mb-1"><span class="text-xs text-zinc-400">Alpine.js</span></div>
-  </div>
-  <div class="mt-8 pt-4 border-t border-zinc-800 text-center">
-    <a href="/games" class="text-sm text-yellow-400 hover:text-yellow-300 underline">View Top 50 Games →</a>
+  <!-- Tech Stack -->
+  <div class="bg-zinc-900 rounded-3xl p-6">
+    <div class="text-yellow-400 text-sm font-medium mb-5">{ tech_stack_title ?? "Tech Stack" }</div>
+    <div class="grid grid-cols-3 gap-6 text-center">
+      <div><img src="/ziggy.svg" alt="Zig" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">Zig</span></div>
+      <div><img src="/htmx.png" alt="HTMX" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">HTMX</span></div>
+      <div><img src="/postgresql.png" alt="PostgreSQL" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">PostgreSQL</span></div>
+      <div><img src="/tailwind.svg" alt="Tailwind" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">Tailwind</span></div>
+      <div><img src="/daysiui.svg" alt="DaisyUI" class="w-8 h-8 mx-auto mb-1"><span class="text-xs text-zinc-400">DaisyUI</span></div>
+      <div><img src="/alpine_long.svg" alt="Alpine.js" class="w-12 h-12 mx-auto mb-1"><span class="text-xs text-zinc-400">Alpine.js</span></div>
+    </div>
+    <div class="mt-8 pt-4 border-t border-zinc-800 text-center">
+      <a href="/games" class="text-sm text-yellow-400 hover:text-yellow-300 underline">View Top 50 Games &rarr;</a>
+    </div>
   </div>
 </div>
-
-</div>
-{% end %}

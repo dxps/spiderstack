@@ -1,41 +1,73 @@
-{% block "base" %}
 <!DOCTYPE html>
-<html lang="{{ base.locale | default:"pt-BR" }}" data-theme="dark">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{{ title | default:"SpiderStack" }}</title>
+  <title>{ title ?? "SpiderStack" }</title>
   <link href="/css/app.css" rel="stylesheet">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#facc15">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <script>
+    function appState() {
+      var s = {};
+      s.drawerOpen = false;
+      return s;
+    }
+    function gamesState() {
+      var s = {};
+      s.open = false;
+      s.game = {};
+      s.game.id = '';
+      s.game.name = '';
+      s.game.platform = '';
+      s.game.year = '';
+      s.game.genre = '';
+      s.game.developer = '';
+      s.game.sales = '';
+      s.game.rating = '';
+      s.selectGame = function(id, name, platform, year, genre, developer, sales, rating) {
+        s.game.id = id;
+        s.game.name = name;
+        s.game.platform = platform;
+        s.game.year = year;
+        s.game.genre = genre;
+        s.game.developer = developer;
+        s.game.sales = sales;
+        s.game.rating = rating;
+        s.open = true;
+      };
+      s.clearGame = function() {
+        s.game.id = '';
+        s.game.name = '';
+        s.game.platform = '';
+        s.game.year = '';
+        s.game.genre = '';
+        s.game.developer = '';
+        s.game.sales = '';
+        s.game.rating = '';
+        s.open = false;
+      };
+      return s;
+    }
+  </script>
   <script src="/htmx.min.js"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('/sw.js');
     }
-   </script>
+  </script>
 </head>
-<body x-data="{ drawerOpen: false }" @htmx:after-swap.window="drawerOpen = false" class="bg-zinc-950 text-white min-h-screen pb-20 lg:pb-0">
-
-  {% include "partials_topbar" %}
-  {% include "partials_drawer" %}
-  {% include "partials_sidebar" %}
-
+<body x-data="appState()" @htmx:after-swap.window="drawerOpen = false" class="bg-zinc-950 text-white min-h-screen pb-20 lg:pb-0">
+  <PartialsTopbar />
+  <PartialsDrawer />
+  <PartialsSidebar />
   <main id="main" class="lg:ml-72 pt-14 lg:pt-8 p-4 lg:p-8 min-h-screen">
-    <!-- <div id="page-skeleton" class="htmx-indicator space-y-4 p-4"> -->
-    <!--   <div class="bg-zinc-800 rounded-3xl h-48 animate-pulse"></div> -->
-    <!--   <div class="bg-zinc-800 rounded-3xl h-32 animate-pulse"></div> -->
-    <!--   <div class="bg-zinc-800 rounded-3xl h-32 animate-pulse"></div> -->
-    <!-- </div> -->
-    {% template "content" %}
+    { slot }
   </main>
-
-  {% include "partials_bottom_nav" %}
-
+  <PartialsBottomNav />
 </body>
 </html>
-{% end %}

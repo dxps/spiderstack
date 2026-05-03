@@ -9,10 +9,10 @@
     <a href="/" class="font-bold text-xl tracking-tighter">SpiderStack</a>
     <div class="flex items-center gap-3">
       <div class="text-right text-sm">
-        <div class="text-xs text-zinc-400">{{ base.user_email | default:"user@email.com" }}</div>
+        <div class="text-xs text-zinc-400">{ base.user_email ?? "user@email.com" }</div>
       </div>
       <div class="w-9 h-9 rounded-2xl bg-yellow-400 flex items-center justify-center text-zinc-950 font-bold text-lg">
-        {{ base.user_initials | default:"G" }}
+        { base.user_initials ?? "G" }
       </div>
     </div>
   </div>

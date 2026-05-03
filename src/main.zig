@@ -34,7 +34,7 @@ pub fn main(init: std.process.Init) !void {
     defer server.deinit();
 
     server
-        .use(middleware.auth)
+        // .use(middleware.auth)
         .get("/login", auth.controller.index)
         .post("/login", auth.controller.handleLogin)
         .get("/auth/google", auth.controller.redirectToGoogle)
