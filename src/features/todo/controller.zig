@@ -36,12 +36,11 @@ pub fn update(c: *spider.Ctx) !spider.Response {
     const id = try std.fmt.parseInt(i64, c.params.get("id") orelse "", 10);
     const updates = try c.parseForm(model.UpdateInput);
     const todo = (try repository.update(c.arena, id, updates)) orelse return c.text("Error updating todo", .{});
-
     if (isHxRequest(c)) {
         const context = try presenter.buildItemContext(c.arena, c, todo);
+        std.debug.print("todo.id={d} todo.title={s}\n", .{ context.todo.id, context.todo.title });
         return c.view("todo/item_todo", context, .{});
     }
-
     return c.redirect("/todo");
 }
 

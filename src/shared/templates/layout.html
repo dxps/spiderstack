@@ -10,49 +10,53 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <script>
-    function appState() {
-      var s = {};
-      s.drawerOpen = false;
-      return s;
-    }
-    function gamesState() {
-      var s = {};
-      s.open = false;
-      s.game = {};
-      s.game.id = '';
-      s.game.name = '';
-      s.game.platform = '';
-      s.game.year = '';
-      s.game.genre = '';
-      s.game.developer = '';
-      s.game.sales = '';
-      s.game.rating = '';
-      s.selectGame = function(id, name, platform, year, genre, developer, sales, rating) {
-        s.game.id = id;
-        s.game.name = name;
-        s.game.platform = platform;
-        s.game.year = year;
-        s.game.genre = genre;
-        s.game.developer = developer;
-        s.game.sales = sales;
-        s.game.rating = rating;
-        s.open = true;
-      };
-      s.clearGame = function() {
-        s.game.id = '';
-        s.game.name = '';
-        s.game.platform = '';
-        s.game.year = '';
-        s.game.genre = '';
-        s.game.developer = '';
-        s.game.sales = '';
-        s.game.rating = '';
-        s.open = false;
-      };
-      return s;
-    }
-  </script>
+ 
+
+<script>
+  function appState() {
+    var s = {};
+    s.drawerOpen = false;
+    return s;
+  }
+  function gamesState() {
+    var s = {};
+    s.open = false;
+    s.game = {};
+    s.game.id = '';
+    s.game.name = '';
+    s.game.platform = '';
+    s.game.year = '';
+    s.game.genre = '';
+    s.game.developer = '';
+    s.game.sales = '';
+    s.game.rating = '';
+    s.selectGame = function(id, name, platform, year, genre, developer, sales, rating) {
+      this.game.id = id;
+      this.game.name = name;
+      this.game.platform = platform;
+      this.game.year = year;
+      this.game.genre = genre;
+      this.game.developer = developer;
+      this.game.sales = sales;
+      this.game.rating = rating;
+      this.open = true;
+    };
+    s.clearGame = function() {
+      this.game.id = '';
+      this.game.name = '';
+      this.game.platform = '';
+      this.game.year = '';
+      this.game.genre = '';
+      this.game.developer = '';
+      this.game.sales = '';
+      this.game.rating = '';
+      this.open = false;
+    };
+    return s;
+  }
+</script>
+
+
   <script src="/htmx.min.js"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
   <script>

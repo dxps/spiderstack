@@ -1,15 +1,23 @@
 <div id="todo-{ todo.id }" class="flex items-center justify-between p-4 bg-zinc-900 rounded-2xl">
   <div class="flex items-center gap-3 flex-1 min-w-0">
+    if (todo.completed) {
     <button hx-post="/todo/{ todo.id }/update"
-            hx-vals='{"completed": "{ todo.completed ? "false" : "true" }"}'
+            hx-vals='{"completed": "false"}'
             hx-target="#todo-{ todo.id }"
             hx-swap="outerHTML"
-            class="w-5 h-5 flex items-center justify-center rounded border { if (todo.completed) { "bg-green-500 border-green-500 text-zinc-950" } else { "border-zinc-600 hover:border-zinc-400" } } text-sm font-bold">
-      { if (todo.completed) { ✓ } }
-    </button>
-    <span class="{ if (todo.completed) { "line-through text-zinc-500" } else { "text-white" } } text-sm truncate">
-      { todo.title }
-    </span>
+            class="w-5 h-5 flex items-center justify-center rounded border bg-green-500 border-green-500 text-zinc-950 text-sm font-bold">✓</button>
+    } else {
+    <button hx-post="/todo/{ todo.id }/update"
+            hx-vals='{"completed": "true"}'
+            hx-target="#todo-{ todo.id }"
+            hx-swap="outerHTML"
+            class="w-5 h-5 flex items-center justify-center rounded border border-zinc-600 hover:border-zinc-400 text-sm font-bold"></button>
+    }
+    if (todo.completed) {
+    <span class="line-through text-zinc-500 text-sm truncate">{ todo.title }</span>
+    } else {
+    <span class="text-white text-sm truncate">{ todo.title }</span>
+    }
   </div>
   <button hx-post="/todo/{ todo.id }/delete"
           hx-target="#todo-{ todo.id }"
