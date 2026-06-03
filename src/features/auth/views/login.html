@@ -58,7 +58,7 @@
         hx-target="#auth-error"
         hx-swap="innerHTML"
         @submit="loading = true"
-        @htmx:after-request="loading = false; if(event.detail.xhr.status === 200) { window.location.href = '/'; } else { document.getElementById('auth-error').classList.remove('hidden'); document.getElementById('error-text').textContent = event.detail.xhr.response; }"
+        @htmx:after-request="loading = false; if(event.detail.xhr.status === 200) {{ window.location.href = '/'; }} else {{ document.getElementById('auth-error').classList.remove('hidden'); document.getElementById('error-text').textContent = event.detail.xhr.response; }}"
         class="space-y-4">
 
         <!-- Email field -->
@@ -116,7 +116,7 @@
         hx-target="#auth-error"
         hx-swap="innerHTML"
         @submit="loading = true"
-        @htmx:after-request="loading = false; if(event.detail.xhr.status === 200) { window.location.href = '/'; } else { document.getElementById('auth-error').classList.remove('hidden'); document.getElementById('error-text').textContent = event.detail.xhr.response; }"
+        @htmx:after-request="loading = false; if(event.detail.xhr.status === 200) {{ window.location.href = '/'; }} else {{ document.getElementById('auth-error').classList.remove('hidden'); document.getElementById('error-text').textContent = event.detail.xhr.response; }}"
         class="space-y-4">
 
         <!-- Name field -->

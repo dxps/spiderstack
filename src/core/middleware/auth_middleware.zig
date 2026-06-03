@@ -69,7 +69,7 @@ pub fn authMiddleware(c: *Ctx, next: NextFn) !Response {
 
     const token = c.cookie(auth.COOKIE_NAME) orelse return c.redirect("/login");
 
-    _ = auth.jwtVerify(AppClaims, c.arena, token, jwt_secret) catch return c.redirect("/login");
+    _ = auth.jwtVerify(AppClaims, c.arena, c._io, token, jwt_secret) catch return c.redirect("/login");
 
     return next(c);
 }

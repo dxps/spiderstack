@@ -70,7 +70,10 @@ pub fn run(alloc: std.mem.Allocator) !void {
             if (up_sql.len == 0 or std.mem.trim(u8, up_sql, " \n\r\t").len == 0) {
                 std.debug.print("MIGRATION: skipping empty {s}\n", .{migration.version});
             } else {
-                const sql_z = try arena.allocator().dupeZ(u8, up_sql);
+                const sql_buf = try arena.allocator().alloc(u8, up_sql.len + 1);
+                @memcpy(sql_buf[0..up_sql.len], up_sql);
+                sql_buf[up_sql.len] = 0;
+                const sql_z: [:0]const u8 = sql_buf[0..up_sql.len :0];
                 try db.queryExecute(void, arena.allocator(), sql_z);
                 std.debug.print("MIGRATION: ran {s}\n", .{migration.version});
             }

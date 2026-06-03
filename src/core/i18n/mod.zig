@@ -95,7 +95,7 @@ pub fn localeFromStr(s: []const u8) Locale {
     };
 
     const normalized = normalized: {
-        var buf: [10]u8 = .{0} ** 10;
+        var buf: [10]u8 = @splat(0);
         const len = @min(clean.len, 10);
         @memcpy(buf[0..len], clean);
         for (buf[0..len]) |*c| {

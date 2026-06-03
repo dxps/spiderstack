@@ -3,15 +3,15 @@ extends "layout"
 <div class="max-w-6xl mx-auto px-4 py-8">
     <!-- Header -->
     <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-800">Popular Movies</h1>
-        <p class="text-gray-600 mt-2">Currently trending movies</p>
+        <h1 class="text-3xl font-bold text-zinc-200">Popular Movies</h1>
+        <p class="text-zinc-400 mt-2">Currently trending movies</p>
         
         <!-- Navigation Links -->
         <div class="mt-4 flex gap-4">
-            <a href="/movies" class="text-blue-600 hover:text-blue-800 font-medium">
+            <a href="/movies" class="text-blue-400 hover:text-blue-300 font-medium">
                 ← Back to Movies
             </a>
-            <a href="/movies/search" class="text-blue-600 hover:text-blue-800 font-medium">
+            <a href="/movies/search" class="text-blue-400 hover:text-blue-300 font-medium">
                 Search Movies
             </a>
         </div>
@@ -21,23 +21,23 @@ extends "layout"
     if (movies.len > 0) {
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         for (movies) |movie| {
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+        <div class="bg-zinc-900 rounded-lg shadow-md shadow-black/20 overflow-hidden hover:shadow-lg hover:shadow-black/20 transition-shadow">
             if (movie.poster_path) {
             <img src="https://image.tmdb.org/t/p/w500{ movie.poster_path }" 
                  alt="{ movie.title }" class="w-full h-80 object-cover">
             } else {
-            <div class="w-full h-80 bg-gray-200 flex items-center justify-center">
-                <span class="text-gray-500">No poster available</span>
+            <div class="w-full h-80 bg-zinc-700 flex items-center justify-center">
+                <span class="text-zinc-500">No poster available</span>
             </div>
             }
             
             <div class="p-4">
-                <h3 class="font-semibold text-lg mb-2 text-gray-800">{ movie.title }</h3>
-                <p class="text-gray-600 text-sm mb-2">{ movie.release_date }</p>
-                <p class="text-gray-700 text-sm line-clamp-3 mb-4">{ movie.overview }</p>
+                <h3 class="font-semibold text-lg mb-2 text-zinc-200">{ movie.title }</h3>
+                <p class="text-zinc-400 text-sm mb-2">{ movie.release_date }</p>
+                <p class="text-zinc-300 text-sm line-clamp-3 mb-4">{ movie.overview }</p>
                 <div class="flex justify-between items-center">
                     <span class="text-yellow-500 font-semibold">⭐ { movie.vote_average }</span>
-                    <span class="text-gray-500 text-sm">{ movie.vote_count } votes</span>
+                    <span class="text-zinc-500 text-sm">{ movie.vote_count } votes</span>
                 </div>
                 <a href="/movies/{ movie.id }" 
                    class="mt-3 block text-center bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
@@ -54,7 +54,7 @@ extends "layout"
         <div class="flex gap-2">
             if (page > 1) {
             <a href="/movies/popular?page={ page - 1 }" 
-               class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+               class="px-4 py-2 bg-zinc-700 rounded-lg hover:bg-zinc-600 transition-colors">
                 Previous
             </a>
             }
@@ -63,7 +63,7 @@ extends "layout"
             
             if (page < total_pages) {
             <a href="/movies/popular?page={ page + 1 }" 
-               class="px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition-colors">
+               class="px-4 py-2 bg-zinc-700 rounded-lg hover:bg-zinc-600 transition-colors">
                 Next
             </a>
             }
@@ -71,8 +71,8 @@ extends "layout"
     </div>
     }
     } else {
-    <div class="bg-white rounded-lg shadow-md p-8 text-center">
-        <p class="text-gray-500">No popular movies found at the moment.</p>
+    <div class="bg-zinc-900 rounded-lg shadow-md shadow-black/20 p-8 text-center">
+        <p class="text-zinc-500">No popular movies found at the moment.</p>
     </div>
     }
 </div>

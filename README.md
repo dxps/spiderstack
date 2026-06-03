@@ -211,7 +211,7 @@ pub fn main(init: std.process.Init) !void {
         .use(middleware.auth)
         .get("/", home.controller.index)
         .get("/games", games.controller.index)
-        .listen(8080) catch |err| return err;
+        .listen(.{ .port = 8080 }) catch |err| return err;
 }
 ```
 

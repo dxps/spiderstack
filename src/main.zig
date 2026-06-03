@@ -13,6 +13,10 @@ const middleware = core.middleware;
 const Response = spider.Response;
 pub const spider_templates = @import("embedded_templates.zig").EmbeddedTemplates;
 
+fn errorHandler(c: *spider.Ctx, err: anyerror) !spider.Response {
+    return c.text(@errorName(err), .{ .status = .internal_server_error });
+}
+
 pub fn main(init: std.process.Init) !void {
     const arena: std.mem.Allocator = init.arena.allocator();
     const io = init.io;
@@ -23,6 +27,7 @@ pub fn main(init: std.process.Init) !void {
         .user = "spider",
         .password = "spider",
         .database = "spiderdb",
+        .pool_size = 20,
     }) catch {
         std.debug.print("Failed to initialize PostgreSQL\n", .{});
         return;
@@ -30,13 +35,13 @@ pub fn main(init: std.process.Init) !void {
     defer spider.pg.deinit();
     try migrations.run(arena);
 
-    var server = spider.app();
+    var server = spider.app(.{});
     defer server.deinit();
 
     server
-        // .use(middleware.auth)
+        .use(spider.logger)
+        .use(middleware.auth)
         .get("/login", auth.controller.index)
-        .post("/login", auth.controller.handleLogin)
         .get("/auth/google", auth.controller.redirectToGoogle)
         .get("/auth/google/callback", auth.controller.googleCallback)
         .post("/auth/email/register", auth.controller.handleEmailAuth)
@@ -55,5 +60,6 @@ pub fn main(init: std.process.Init) !void {
         .get("/movies/search", movies.controller.search)
         .get("/movies/popular", movies.controller.popular)
         .get("/movies/:id", movies.controller.movieDetails)
-        .listen(8080) catch |err| return err;
+        .onError(errorHandler)
+        .listen(.{ .port = 8080, .host = "0.0.0.0" }) catch |err| return err;
 }

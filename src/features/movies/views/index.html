@@ -3,8 +3,8 @@ extends "layout"
 <div class="max-w-2xl mx-auto px-4 py-6">
 
   <!-- Header -->
-  <h1 class="text-2xl font-semibold text-gray-900 mb-1">Movie Database</h1>
-  <p class="text-sm text-gray-500 mb-4">Search and explore movies using TMDb API</p>
+  <h1 class="text-2xl font-semibold text-zinc-100 mb-1">Movie Database</h1>
+  <p class="text-sm text-zinc-500 mb-4">Search and explore movies using TMDb API</p>
 
   <!-- Nav buttons -->
   <div class="grid grid-cols-2 gap-2 mb-4">
@@ -19,7 +19,7 @@ extends "layout"
   <!-- Search bar -->
   <form action="/movies/search" method="get" class="flex gap-2 mb-6">
     <input type="text" name="q" placeholder="Enter movie title..."
-           class="flex-1 text-sm px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-blue-400">
+           class="flex-1 text-sm px-3 py-2 border border-zinc-700 rounded-lg focus:outline-none focus:border-blue-400">
     <button type="submit"
             class="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors">
       Search
@@ -27,12 +27,12 @@ extends "layout"
   </form>
 
   <!-- Section label -->
-  <p class="text-xs font-medium text-gray-400 uppercase tracking-wide mb-3">Popular right now</p>
+  <p class="text-xs font-medium text-zinc-400 uppercase tracking-wide mb-3">Popular right now</p>
 
   <!-- Movie cards -->
   <div class="flex flex-col gap-3">
-    for (movies) |movie| {
-    <a href="/movies/{ movie.id }" class="flex gap-3 bg-gray-50 rounded-xl p-3 border border-gray-100 hover:border-gray-200 transition-colors">
+    for (results) |movie| {
+    <a href="/movies/{ movie.id }" class="flex gap-3 bg-zinc-800/50 rounded-xl p-3 border border-zinc-800 hover:border-zinc-700 transition-colors">
       
       <!-- Poster thumbnail -->
       if (movie.poster_path) {
@@ -40,22 +40,22 @@ extends "layout"
            alt="{ movie.title }"
            class="w-14 h-20 object-cover rounded-lg flex-shrink-0">
       } else {
-      <div class="w-14 h-20 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center">
-        <span class="text-gray-400 text-xl font-medium">{ movie.title }</span>
+      <div class="w-14 h-20 bg-zinc-700 rounded-lg flex-shrink-0 flex items-center justify-center">
+        <span class="text-zinc-500 text-xl font-medium">{ movie.title }</span>
       </div>
       }
 
       <!-- Info -->
       <div class="flex-1 min-w-0">
-        <p class="text-sm font-medium text-gray-900 mb-0.5 truncate">{ movie.title }</p>
-        <p class="text-xs text-gray-400 mb-1.5">
-          { movie.release_date[0..4] } · { movie.original_language }
+        <p class="text-sm font-medium text-zinc-100 mb-0.5 truncate">{ movie.title }</p>
+        <p class="text-xs text-zinc-400 mb-1.5">
+          { movie.release_date[0..4] }
         </p>
         <div class="flex items-center gap-1 mb-1.5">
           <span class="text-amber-400 text-xs">★</span>
-          <span class="text-xs text-gray-400">{ movie.vote_average } · { movie.vote_count } votes</span>
+          <span class="text-xs text-zinc-400">{ movie.vote_average } · { movie.vote_count } votes</span>
         </div>
-        <p class="text-xs text-gray-400 leading-relaxed line-clamp-2">{ movie.overview }</p>
+        <p class="text-xs text-zinc-400 leading-relaxed line-clamp-2">{ movie.overview }</p>
       </div>
     </a>
     }

@@ -5,8 +5,6 @@ const model = @import("model.zig");
 const repository = @import("repository.zig");
 const presenter = @import("presenter.zig");
 
-// const view = @embedFile("views/index.html");
-
 pub fn index(c: *spider.Ctx) !spider.Response {
     const todos = try repository.findAll(c.arena);
     defer c.arena.free(todos);

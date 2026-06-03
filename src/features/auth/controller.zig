@@ -108,10 +108,33 @@ pub fn googleCallback(c: *spider.Ctx) !spider.Response {
     const code = try urlDecode(c.arena, code_encoded);
     const googleConfig = config.getGoogleConfig();
 
-    const profile = service.fetchGoogleProfile(c, code, googleConfig) catch return c.redirect("/login");
-    const user = use_case.findOrCreateOAuthUser(c.arena, profile) catch return c.redirect("/login");
-    const token = generateJwtWithRoles(c.arena, c._io, user) catch return c.redirect("/login");
-    const cookie_value = auth.cookieSet(c.arena, token) catch return c.redirect("/login");
+    const profile = service.fetchGoogleProfile(c, code, googleConfig) catch |err| {
+        std.debug.print("[auth/google] fetchGoogleProfile failed: {s}\n", .{@errorName(err)});
+        return c.redirect("/login");
+    };
+    const user = blk: {
+        var retries: usize = 3;
+        break :blk while (retries > 0) : (retries -= 1) {
+            break :blk use_case.findOrCreateOAuthUser(c.arena, profile) catch |err| {
+                if (retries > 1 and err == error.ConnectionBusy) {
+                    std.debug.print("[auth/google] findOrCreateOAuthUser failed: {s} (retrying...)\n", .{@errorName(err)});
+                    var ts = std.os.linux.timespec{ .sec = 0, .nsec = 100 * std.time.ns_per_ms };
+                    _ = std.os.linux.nanosleep(&ts, null);
+                    continue;
+                }
+                std.debug.print("[auth/google] findOrCreateOAuthUser failed: {s}\n", .{@errorName(err)});
+                return c.redirect("/login");
+            };
+        } else unreachable;
+    };
+    const token = generateJwtWithRoles(c.arena, c._io, user) catch |err| {
+        std.debug.print("[auth/google] generateJwtWithRoles failed: {s}\n", .{@errorName(err)});
+        return c.redirect("/login");
+    };
+    const cookie_value = auth.cookieSet(c.arena, token) catch |err| {
+        std.debug.print("[auth/google] cookieSet failed: {s}\n", .{@errorName(err)});
+        return c.redirect("/login");
+    };
 
     const headers = try c.arena.alloc([2][]const u8, 2);
     headers[0] = .{ "Location", "/" };

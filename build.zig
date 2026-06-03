@@ -44,19 +44,21 @@ pub fn build(b: *std.Build) void {
 
     b.installArtifact(exe);
 
-    // Automatic setup with spider.config.zig and embedded templates
+    // ── spider.config.zig ───────────────────────────────────────────
+    // Register the project config as a module with spider import
+    const spider_config_mod = b.createModule(.{
+        .root_source_file = b.path("spider.config.zig"),
+        .imports = &.{
+            .{ .name = "spider", .module = spider_mod },
+        },
+    });
+    spider_mod.addImport("spider_config", spider_config_mod);
 
-    // 1. generate-templates
+    // ── Generate embedded templates ─────────────────────────────────
     const gen = b.addRunArtifact(spider_dep.artifact("generate-templates"));
     gen.addArg("src/");
     gen.addArg("src/embedded_templates.zig");
     exe.step.dependOn(&gen.step);
-
-    // 3. register spider_config
-    // The file will be created automatically or the import will fail gracefully
-    exe.root_module.addAnonymousImport("spider_config", .{
-        .root_source_file = b.path("spider.config.zig"),
-    });
 
     // ── Run ───────────────────────────────────────────────────────────
     const run_cmd = b.addRunArtifact(exe);
@@ -68,7 +70,15 @@ pub fn build(b: *std.Build) void {
 
     // ── Unit tests (no database required) ──────────────────────────────
     // zig build test
-    const unit_tests = b.addTest(.{ .root_module = exe.root_module });
+    const test_mod_root = b.createModule(.{
+        .root_source_file = b.path("src/test.zig"),
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+    test_mod_root.addImport("spider", spider_mod);
+
+    const unit_tests = b.addTest(.{ .root_module = test_mod_root });
     const run_unit_tests = b.addRunArtifact(unit_tests);
     const test_step = b.step("test", "Run unit tests");
     test_step.dependOn(&run_unit_tests.step);
